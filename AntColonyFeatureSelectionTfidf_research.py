@@ -175,7 +175,6 @@ test_topics_ids = [[favorite_topics_id.index(topic) for topic in doc_topic_set] 
 
 training_topics_set = list(set(label for label_set in sample_labels.values() for label in label_set))
 
-
 # ============== Check for Cosine Similarity of terms and reduce the number of terms(features) =============
 
 joined_docs = [" ".join(words) for words in tokenized_documents.values()]
@@ -282,6 +281,7 @@ def co_occurrence_calculation(prob_token_pairs, prob_tokens_in_topic, index, tok
         return -1
     return ((np.log(prob_tokens_in_topic[token_1]) + np.log(prob_tokens_in_topic[token_2])) / np.log(prob_token_pairs[index])) - 1
 
+
 num_topics = len(training_topics_set)
 num_documents = len(tokenized_documents_arr)
 num_words = len(unique_tokens)
@@ -302,14 +302,15 @@ test_corpus = [dictionary.doc2bow(document) for document in tokenized_test_docs_
 # Define the ACO parameters
 num_ants = 10
 num_exploration = 20
-num_iterations = 20
+num_iterations = 10
 beta = 0.04  # initial percentage of taken from heuristic (global pheromone) - percentage changes through iterations
 theta = 0.3  # effect of exploration ants pheromones (local)
 evaporation_rate = 0.2
 epsilon = 0.000001
 lda_passes_count = 20
 sliding_window = 10
-load_exploration = True
+load_exploration = False
+exploring_ants = None
 
 save_prerequirments(np.array(sample_keys), np.array(train_doc_ids), np.array(test_doc_ids))
 
@@ -350,7 +351,7 @@ for iteration in range(iteration_start, num_iterations):
         # keeps fitness function of generated ants
         exploring_ants_fitness_val = np.array([])
 
-        # keeps exploring ants coverage, coherence, and preplexity
+        # keeps exploring ants coverage, coherence, and perplexity
         exploring_ants_metrics = []
 
         exploring_topic_distribution = np.empty(shape=(num_ants, num_topics, num_words))
@@ -358,6 +359,7 @@ for iteration in range(iteration_start, num_iterations):
         # add the effect of global pheromone
         for ant_index in range(num_ants):
             exploring_topic_distribution[ant_index] = np.multiply(exploring_ants[ant_index] * (1-beta), pheromone_matrix * beta)  # pheromone and ant have different dimensions
+            exploring_topic_distribution[ant_index][exploring_topic_distribution[ant_index] < epsilon] = epsilon
             exploring_topic_distribution[ant_index] = preprocessing.normalize(exploring_topic_distribution[ant_index], axis=0, norm='l1')
 
         for topic_distribution in exploring_topic_distribution:
