@@ -446,3 +446,53 @@ for iteration in range(iteration_start, num_iterations):
 
     print('Iteration', iteration, ' duration: ', time.time() - start_time)
     print("\n====================================================================================")
+
+
+########################################################################################################################
+# test Section
+new_lda = models.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics, alpha='auto', eta=best_solution, passes=20)
+predicted_topics = []
+for index in range(len(test_corpus)):
+    predictions = new_lda.get_document_topics(test_corpus[index])
+
+    # Get the topic IDs
+    topics = [p[0] for p in predictions]
+
+    # Get the probabilities
+    probs = [p[1] for p in predictions]
+
+    # Find index of max probability
+    max_index = probs.index(max(probs))
+
+    # The topic with highest probability
+    predicted_topics.append(topics[max_index])
+
+from sklearn.metrics import f1_score
+
+true_topics = [topic_list[0] for topic_list in test_topics_ids]
+
+f1 = f1_score(true_topics, predicted_topics, average='macro')
+
+print(f1)
+
+f1_scores = {}
+for t in range(num_topics):
+   f1 = f1_score(true_topics, predicted_topics, average=None)[t]
+   f1_scores[t] = f1
+
+print(f1_scores)
+
+from sklearn.metrics import classification_report
+print(classification_report(true_topics, predicted_topics))
+
+lengths = []
+sum = [0,0,0,0]
+count = [0,0,0,0]
+
+for index, doc in enumerate(tokenized_documents_arr):
+  topic = train_topics_ids[index][0]
+  sum[topic] = sum[topic] + len(doc)
+  count[topic] = count[topic] + 1
+
+for index, value in enumerate(sum):
+    print("topic {}:\tCount: {},\tAvg length: {}\n".format(index, count[index], sum[index]/count[index]))
