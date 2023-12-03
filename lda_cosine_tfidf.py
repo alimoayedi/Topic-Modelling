@@ -287,14 +287,14 @@ test_corpus = [dictionary.doc2bow(document) for document in tokenized_test_docs_
 # ut.plot_topic_distribution(training_topics_set, train_topics_ids)
 
 # Define the ACO parameters
-num_ants = 20
-num_exploration = 10
-num_iterations = 5
+num_ants = 1
+num_exploration = 1
+num_iterations = 1
 beta = 0.05  # initial percentage of taken from heuristic (global pheromone) - percentage changes through iterations
 theta = 0.03  # effect of exploration ants pheromones (local)
 evaporation_rate = 0.2
 epsilon = 0.000001
-lda_passes_count = 50
+lda_passes_count = 1
 sliding_window = 10
 load_exploration = True
 
@@ -347,10 +347,12 @@ for iteration in range(iteration_start, num_iterations):
             exploring_topic_distribution[ant_index] = np.multiply(exploring_ants[ant_index] * (1-beta), pheromone_matrix * beta)  # pheromone and ant have different dimensions
             exploring_topic_distribution[ant_index] = preprocessing.normalize(exploring_topic_distribution[ant_index], axis=0, norm='l1')
 
-        for topic_distribution in exploring_topic_distribution:
+        new_lda = models.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics, alpha='auto',
+                                  eta=exploring_topic_distribution[0], passes=lda_passes_count, iterations=1)
+
+        for counter in range(2500):
             # Evaluate the quality of the new topic distribution
-            new_lda = models.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics, alpha='auto',
-                                      eta=topic_distribution, passes=lda_passes_count)
+            new_lda.update(corpus)
 
             coverages = ut.calculate_coverage(num_documents, num_topics, num_words, new_lda, corpus)
             coverage_score = np.power(np.sum(np.power(coverages, 2)) / num_documents, 0.5)
@@ -402,35 +404,35 @@ for iteration in range(iteration_start, num_iterations):
             exploring_ants[ant_index] = np.multiply(exploring_ants[ant_index] * (1-theta), exploring_topic_distribution[selected_leader_ants[ant_index]] * theta)
             exploring_ants[ant_index] = preprocessing.normalize(exploring_ants[ant_index], axis=0, norm='l1')
 
-        save_exploration_data(exploration_index+1, exploring_ants, exploration_best_solution, exploration_best_solution_score, exploration_best_metrics)
+        # save_exploration_data(exploration_index+1, exploring_ants, exploration_best_solution, exploration_best_solution_score, exploration_best_metrics)
 
-    if exploration_best_solution_score < best_solution_score:
-        best_iteration = iteration
-        best_metrics = exploration_best_metrics
-        best_solution = exploration_best_solution
-        best_solution_score = exploration_best_solution_score
-
-    # Update the pheromone matrix
-    pheromone_matrix = np.add(pheromone_matrix, exploration_best_solution)
-    pheromone_matrix *= (1 - evaporation_rate)
-    pheromone_matrix = preprocessing.normalize(pheromone_matrix, axis=0, norm='l1')
-
-    save_iteration_data(iteration+1, pheromone_matrix, best_iteration, best_solution, best_solution_score, best_metrics)
-
-    print("\n======================")
-    print("Current iteration: ", iteration,
-          "\nObjective function: ", exploration_best_solution_score,
-          "\nBest Distribution: \n", exploration_best_solution,
-          "\nCoverage", exploration_best_metrics[0],
-          "\nCoherence: ", exploration_best_metrics[1],
-          "\nPreplexity: ", exploration_best_metrics[2])
-
-    # Print the best solution found so far
-    print("\n======================")
-    print('Best iteration: ', best_iteration, '\nBest Metrics: ', best_metrics, '\nBest objective function: ', best_solution_score, '\nBest solution: \n', best_solution)
-
-    print('Iteration', iteration, ' duration: ', time.time() - start_time)
-    print("\n====================================================================================")
+    # if exploration_best_solution_score < best_solution_score:
+    #     best_iteration = iteration
+    #     best_metrics = exploration_best_metrics
+    #     best_solution = exploration_best_solution
+    #     best_solution_score = exploration_best_solution_score
+    #
+    # # Update the pheromone matrix
+    # pheromone_matrix = np.add(pheromone_matrix, exploration_best_solution)
+    # pheromone_matrix *= (1 - evaporation_rate)
+    # pheromone_matrix = preprocessing.normalize(pheromone_matrix, axis=0, norm='l1')
+    #
+    # save_iteration_data(iteration+1, pheromone_matrix, best_iteration, best_solution, best_solution_score, best_metrics)
+    #
+    # print("\n======================")
+    # print("Current iteration: ", iteration,
+    #       "\nObjective function: ", exploration_best_solution_score,
+    #       "\nBest Distribution: \n", exploration_best_solution,
+    #       "\nCoverage", exploration_best_metrics[0],
+    #       "\nCoherence: ", exploration_best_metrics[1],
+    #       "\nPreplexity: ", exploration_best_metrics[2])
+    #
+    # # Print the best solution found so far
+    # print("\n======================")
+    # print('Best iteration: ', best_iteration, '\nBest Metrics: ', best_metrics, '\nBest objective function: ', best_solution_score, '\nBest solution: \n', best_solution)
+    #
+    # print('Iteration', iteration, ' duration: ', time.time() - start_time)
+    # print("\n====================================================================================")
 
 ########################################################################################################################
 # test Section
@@ -480,3 +482,12 @@ for index, doc in enumerate(tokenized_documents_arr):
 
 for index, value in enumerate(sum):
     print("topic {}:\tCount: {},\tAvg length: {}\n".format(index, count[index], sum[index]/count[index]))
+
+
+import matplotlib.pyplot as plt
+
+plt.plot(exploring_ants_fitness_val)
+plt.xlabel('Iteration')
+plt.ylabel('Objective Function Value')
+plt.title('Plot of Objective Function Values Against Iteration')
+plt.show()
