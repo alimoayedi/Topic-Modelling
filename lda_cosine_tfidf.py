@@ -288,7 +288,7 @@ test_corpus = [dictionary.doc2bow(document) for document in tokenized_test_docs_
 
 # Define the ACO parameters
 num_ants = 1
-num_exploration = 1
+num_exploration = 10
 num_iterations = 1
 beta = 0.05  # initial percentage of taken from heuristic (global pheromone) - percentage changes through iterations
 theta = 0.03  # effect of exploration ants pheromones (local)
@@ -344,15 +344,15 @@ for iteration in range(iteration_start, num_iterations):
 
         # add the effect of global pheromone
         for ant_index in range(num_ants):
-            exploring_topic_distribution[ant_index] = np.multiply(exploring_ants[ant_index] * (1-beta), pheromone_matrix * beta)  # pheromone and ant have different dimensions
-            exploring_topic_distribution[ant_index] = preprocessing.normalize(exploring_topic_distribution[ant_index], axis=0, norm='l1')
+            exploring_topic_distribution[ant_index] = np.multiply(exploring_ants[ant_index] * (1 - beta),
+                                                                  pheromone_matrix * beta)  # pheromone and ant have different dimensions
+            exploring_topic_distribution[ant_index] = preprocessing.normalize(exploring_topic_distribution[ant_index],
+                                                                              axis=0, norm='l1')
 
-        new_lda = models.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics, alpha='auto',
+            new_lda = models.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics, alpha='auto',
                                   eta=exploring_topic_distribution[0], passes=lda_passes_count, iterations=1)
 
-        for counter in range(2500):
             # Evaluate the quality of the new topic distribution
-            new_lda.update(corpus)
 
             coverages = ut.calculate_coverage(num_documents, num_topics, num_words, new_lda, corpus)
             coverage_score = np.power(np.sum(np.power(coverages, 2)) / num_documents, 0.5)
@@ -383,6 +383,10 @@ for iteration in range(iteration_start, num_iterations):
             exploring_ants_fitness_val = np.append(exploring_ants_fitness_val, objective_value)
             # saves objective metrics
             exploring_ants_metrics.append(objective_metrics)
+
+            ## REMOVE THESE PARTS LATER:
+            array_of_objectivefunction = np.append(array_of_objectivefunction, exploring_ants_fitness_val)
+            array_of_metrics = np.append(array_of_metrics, exploring_ants_metrics)
 
         # Update the best solution found in this exploration
         if np.min(exploring_ants_fitness_val) < exploration_best_solution_score:
@@ -491,3 +495,39 @@ plt.xlabel('Iteration')
 plt.ylabel('Objective Function Value')
 plt.title('Plot of Objective Function Values Against Iteration')
 plt.show()
+
+
+
+
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define the size of each split array
+split_size = 3126250
+
+# Calculate the number of splits
+num_splits = len(array_of_objectivefunction) // split_size
+
+# Split the original array into equal-sized arrays
+split_arrays = np.array_split(array_of_objectivefunction, num_splits)
+
+# Plot each split array
+for i, split_array in enumerate(split_arrays):
+i=9
+plt.plot(split_arrays[i][3123761:3126250], label=f'Split {i + 1}')
+plt.xlabel('Iteration')
+plt.ylabel('Objective Function Value')
+plt.title('Objective Function Values Against LDA Iteration\nONLY LDA IS USED - Itration: '+str(i))
+plt.savefig('iteration_'+ str(i) +'.png')
+
+# Add labels and legend
+plt.xlabel('Index')
+plt.ylabel('Value')
+plt.legend()
+
+# Show the plot
+plt.show()
+1327+1829+2362+1259+2086+504+1289

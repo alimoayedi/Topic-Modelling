@@ -46,15 +46,15 @@ def file_exists(filename):
     return os.path.exists(directory) and os.path.isfile(directory)
 
 
-def save_prerequirments(sample_key, train_doc_ids, test_doc_ids):
-    dir = 'outputs/prerequirments.npz'
+def set_requirements(sample_key, train_doc_ids, test_doc_ids):
+    dir = 'outputs/pre_requirements.npz'
     np.savez(dir, sample_key=sample_key, train_doc_ids=train_doc_ids, test_doc_ids=test_doc_ids)
 
 
-def get_prerequirments():
-    if not file_exists('prerequirments'):
+def get_requirements():
+    if not file_exists('pre_requirements'):
         return None, None, None
-    data = np.load('outputs/prerequirments.npz')
+    data = np.load('outputs/pre_requirements.npz')
     sample_key = data['sample_key']
     train_doc_ids = data['train_doc_ids']
     test_doc_ids = data['test_doc_ids']
@@ -129,7 +129,7 @@ fav_documents = dict(zip(documents_df.index.to_list(), documents_df.values.tolis
 fav_documents_topics = dict(zip(labels_df.index.to_list(), labels_df['selected_topic'].tolist()))
 
 # checks if we have saved samples or not. If YES, they are loaded and if NO, new samples are taken
-sample_keys, train_doc_ids, test_doc_ids = get_prerequirments()
+sample_keys, train_doc_ids, test_doc_ids = get_requirements()
 
 if sample_keys is not None:
     sample_documents = {key: fav_documents[key] for key in sample_keys}
@@ -207,9 +207,9 @@ for doc, topic_set in zip(tokenized_documents_arr, train_topics_ids):
     if topic not in topics_docs_dic.keys(): topics_docs_dic[topic] = []
     topics_docs_dic[topic].extend(doc)
 
-# dictionary of concatination of all documents for each topic.
+# dictionary of concatenation of all documents for each topic.
 for key in topics_docs_dic.keys():
-  topics_docs_dic[key] = [" ".join(topics_docs_dic[key])]
+    topics_docs_dic[key] = [" ".join(topics_docs_dic[key])]
 
 # topics_docs contains len(topics) number of elements. Each element is a long string of all documents.
 topics_docs=[doc[0] for doc in list(topics_docs_dic.values())]
@@ -218,6 +218,7 @@ vectorizer = TfidfVectorizer(ngram_range=(1,1), min_df=1, max_features=None, sto
 tfidf_matrix = vectorizer.fit_transform(topics_docs)
 # print(vectorizer.get_feature_names_out())
 # print(tfidf_matrix.tolist())
+
 
 def document_likelihood(doc, test_doc_topics, topics_terms_list):
     log_likelihood = 0
@@ -240,6 +241,7 @@ def document_likelihood(doc, test_doc_topics, topics_terms_list):
         log_likelihood += word_count * np.log2(word_topic_probability)
     if log_likelihood == -np.inf: return 0
     return log_likelihood
+
 
 def calculate_perplexity(test_doc_topics, topics_terms_list, test_corpus):
     # calculate perplexity
@@ -312,7 +314,7 @@ sliding_window = 10
 load_exploration = False
 exploring_ants = None
 
-save_prerequirments(np.array(sample_keys), np.array(train_doc_ids), np.array(test_doc_ids))
+set_requirements(np.array(sample_keys), np.array(train_doc_ids), np.array(test_doc_ids))
 
 # save the best global solution (at each iteration)
 iteration_start, pheromone_matrix, best_iteration, best_solution, best_solution_score, best_metrics = get_iteration_data()
